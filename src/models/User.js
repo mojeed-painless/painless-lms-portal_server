@@ -1,5 +1,3 @@
-// lms-backend/src/models/User.js
-
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 
@@ -26,7 +24,7 @@ const userSchema = mongoose.Schema(
       type: String,
       enum: ['student', 'instructor', 'admin'],
       required: true,
-      default: 'student', // Default role for new signups
+      default: 'student',
     },
     isApproved: {
       type: Boolean,
