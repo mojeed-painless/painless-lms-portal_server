@@ -61,8 +61,19 @@ const authUser = asyncHandler(async (req, res) => {
   // 2. Check if the user exists AND if the password matches
   if (user && (await user.matchPassword(password))) {
     if (!user.isApproved) {
-        res.status(401);
-        throw new Error('Account pending approval. Please wait for an administrator to activate your account.');
+        return res.status(401).json({
+        status: 'error',
+        code: 'ACCOUNT_PENDING',
+        errorType: 'approval_pending',
+        message: 'Account pending approval. Please wait for an administrator to activate your account.',
+        ui: {
+          presentation: 'banner',   // frontend: banner | modal | inline
+          severity: 'warning',      // frontend: info | warning | error
+          cssClass: 'pending-state' // optional CSS hook
+        },
+        retryable: false
+      });
+    
     }
 
     res.json({
