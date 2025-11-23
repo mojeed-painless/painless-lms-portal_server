@@ -24,7 +24,7 @@ const app = express();
 // 🔑 CORS Configuration (CRUCIAL FOR PRODUCTION)
 const allowedOrigins = [
   'http://localhost:5173', 
-  'https://lms-react-app-client.vercel.app'
+  'https://painless-lms-portal.vercel.app/'
 ];
 
 // Add the Vercel URL only if it's available in the environment
