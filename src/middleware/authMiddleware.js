@@ -1,5 +1,3 @@
-// lms-backend/src/middleware/authMiddleware.js
-
 import jwt from 'jsonwebtoken';
 import asyncHandler from 'express-async-handler';
 import User from '../models/User.js';
@@ -39,6 +37,10 @@ const protect = asyncHandler(async (req, res, next) => {
   }
 });
 
+
+
+
+
 // --- 2. Middleware for specific role check (Authorization) ---
 const instructor = (req, res, next) => {
   // Check if the user is authenticated (from the protect middleware) 
@@ -51,4 +53,21 @@ const instructor = (req, res, next) => {
   }
 };
 
-export { protect, instructor };
+
+
+
+
+
+
+// --- 3. Middleware for admin role check (Authorization) ---
+const admin = (req, res, next) => {
+  // Check if the user is authenticated AND has the 'admin' role
+  if (req.user && req.user.role === 'admin') {
+    next(); // Authorized, proceed
+  } else {
+    res.status(403); // 403 Forbidden
+    throw new Error('Not authorized as an administrator');
+  }
+};
+
+export { protect, instructor, admin };

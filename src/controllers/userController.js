@@ -1,6 +1,4 @@
-// lms-backend/src/controllers/userController.js
-
-import asyncHandler from 'express-async-handler'; // Utility for handling exceptions in async functions
+import asyncHandler from 'express-async-handler';
 import User from '../models/User.js';
 import generateToken from '../utils/generateToken.js';
 
@@ -23,7 +21,8 @@ const registerUser = asyncHandler(async (req, res) => {
     username,
     email,
     password, // Mongoose pre-save middleware will hash this
-    role: role || 'stuent'
+    role: role || 'student',
+    isApproved: false,
   });
 
   // 3. Respond with user data and the token
@@ -41,6 +40,12 @@ const registerUser = asyncHandler(async (req, res) => {
   }
 });
 
+
+
+
+
+
+
 // @desc    Authenticate user & get token
 // @route   POST /api/users/login
 // @access  Public
@@ -55,7 +60,11 @@ const authUser = asyncHandler(async (req, res) => {
 
   // 2. Check if the user exists AND if the password matches
   if (user && (await user.matchPassword(password))) {
-    // 3. Success: Respond with user data and the token
+    if (!user.isApproved) {
+        res.status(401);
+        throw new Error('Account pending approval. Please wait for an administrator to activate your account.');
+    }
+
     res.json({
       _id: user._id,
       username: user.username,
@@ -70,4 +79,66 @@ const authUser = asyncHandler(async (req, res) => {
   }
 });
 
-export { registerUser, authUser };
+
+
+
+
+
+// @desc    Get all users pending approval
+// @route   GET /api/users/admin/pending
+// @access  Private/Admin
+const getPendingUsers = asyncHandler(async (req, res) => {
+  // Find all users who are not approved
+  const users = await User.find({ isApproved: false }).select('-password');
+  res.json(users);
+});
+
+
+
+
+
+
+
+
+// @desc    Approve/Reject a user and optionally change role
+// @route   PUT /api/users/admin/:id
+// @access  Private/Admin
+const updateUserStatus = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.params.id);
+  const { isApproved, role } = req.body;
+
+  if (user) {
+    // Prevent admin from locking out the main admin account (optional security)
+    if (user.role === 'admin' && req.user._id.toString() !== user._id.toString()) {
+        res.status(403);
+        throw new Error('Cannot modify another admin account.');
+    }
+    
+    // Update fields only if they are provided in the request body
+    if (isApproved !== undefined) {
+        user.isApproved = isApproved;
+    }
+    if (role && ['student', 'instructor', 'admin'].includes(role)) {
+        user.role = role;
+    }
+
+    const updatedUser = await user.save();
+    res.json({
+      _id: updatedUser._id,
+      username: updatedUser.username,
+      isApproved: updatedUser.isApproved,
+      role: updatedUser.role,
+    });
+  } else {
+    res.status(404);
+    throw new Error('User not found');
+  }
+});
+
+
+export { 
+    authUser, 
+    registerUser, 
+    getPendingUsers, 
+    updateUserStatus 
+};
