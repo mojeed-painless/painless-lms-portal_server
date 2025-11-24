@@ -45,10 +45,10 @@ const authUser = asyncHandler(async (req, res) => {
 // @route   POST /api/users/register
 // @access  Public
 const registerUser = asyncHandler(async (req, res) => {
-  const { firstName, lastName, username, email, password, role, identifier } = req.body;
+  const { firstName, lastName, username, email, password, role } = req.body;
 
   const userExists = await User.findOne({ 
-    $or: [{ email: identifier }, { username: identifier }] 
+    $or: [ { email }, { username } ] 
   });
 
   if (userExists) {
