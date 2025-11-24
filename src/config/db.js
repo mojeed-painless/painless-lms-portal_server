@@ -1,5 +1,3 @@
-// lms-backend/src/config/db.js
-
 import mongoose from 'mongoose';
 
 const connectDB = async () => {
