@@ -120,15 +120,24 @@ const updateUserStatus = asyncHandler(async (req, res) => {
     }
     if (role && ['student', 'instructor', 'admin'].includes(role)) {
         user.role = role;
+    } else if (role === null || role === "") {
+        
     }
 
-    const updatedUser = await user.save();
-    res.json({
-      _id: updatedUser._id,
-      username: updatedUser.username,
-      isApproved: updatedUser.isApproved,
-      role: updatedUser.role,
-    });
+    try {
+        const updatedUser = await user.save(); // The crash most likely occurs here.
+        res.json({
+            _id: updatedUser._id,
+            username: updatedUser.username,
+            isApproved: updatedUser.isApproved,
+            role: updatedUser.role,
+        });
+    } catch (saveError) {
+        // If the save fails (e.g., Mongoose validation), 
+        // throw a handled error instead of crashing the server.
+        res.status(400); // Bad Request for validation failure
+        throw new Error(`Validation Error on Save: ${saveError.message}`);
+    }
   } else {
     res.status(404);
     throw new Error('User not found');
