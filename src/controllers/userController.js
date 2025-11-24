@@ -104,6 +104,7 @@ const getPendingUsers = asyncHandler(async (req, res) => {
 // @route   PUT /api/users/admin/:id
 // @access  Private/Admin
 const updateUserStatus = asyncHandler(async (req, res) => {
+  console.log('Request Body:', req.body);
   const user = await User.findById(req.params.id);
   const { isApproved, role } = req.body;
 
@@ -124,7 +125,8 @@ const updateUserStatus = asyncHandler(async (req, res) => {
     if (role && validRoles.includes(role)) {
         user.role = role;
     } else if (role === null || role === "") {
-        
+        res.status(400);
+        throw new Error('Invalid role provided.');
     }
 
     try {
