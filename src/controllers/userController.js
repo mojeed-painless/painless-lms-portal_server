@@ -118,7 +118,10 @@ const updateUserStatus = asyncHandler(async (req, res) => {
     if (isApproved !== undefined) {
         user.isApproved = isApproved;
     }
-    if (role && ['student', 'instructor', 'admin'].includes(role)) {
+
+    const validRoles = ['student', 'instructor', 'admin'];
+
+    if (role && validRoles.includes(role)) {
         user.role = role;
     } else if (role === null || role === "") {
         
