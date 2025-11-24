@@ -158,10 +158,28 @@ const deleteUser = asyncHandler(async (req, res) => {
   }
 });
 
+
+
+
+
+
+
+
+
+// @desc    Get all registered users (approved and unapproved)
+// @route   GET /api/users/admin/all
+// @access  Private/Admin
+const getAllUsers = asyncHandler(async (req, res) => {
+  // Find all users *except* the currently logged-in admin (optional, but good practice)
+  const users = await User.find({ _id: { $ne: req.user._id } }).select('-password');
+  res.json(users);
+});
+
 export { 
     authUser, 
     registerUser, 
     getPendingUsers, 
     updateUserStatus,
-    deleteUser // ⬅️ Export the new function
+    deleteUser,
+    getAllUsers
 };

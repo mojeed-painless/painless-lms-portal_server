@@ -4,8 +4,8 @@ import {
     registerUser, 
     getPendingUsers, 
     updateUserStatus,
-    deleteUser
-    getAllUsers,
+    deleteUser,
+    getAllUsers
 } from '../controllers/userController.js';
 import { protect, admin } from '../middleware/authMiddleware.js';
 
