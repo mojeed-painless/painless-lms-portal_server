@@ -13,11 +13,9 @@ router.post('/login', authUser);
 router.route('/register').post(registerUser);
 
 // Admin routes (Protected by 'protect' AND 'admin' middleware)
-router.route('/admin/pending')
-    .get(protect, admin, getPendingUsers); 
+router.route('/admin/pending').get(protect, admin, getPendingUsers); 
 
-router.route('/admin/:id')
-    .put(protect, admin, updateUserStatus);
+router.route('/admin/:id').put(protect, admin, updateUserStatus);
 
     
 export default router;
