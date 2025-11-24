@@ -6,9 +6,11 @@ import User from '../models/User.js';
 // @route   POST /api/users/login
 // @access  Public
 const authUser = asyncHandler(async (req, res) => {
-  const { email, password } = req.body;
+  const { identifier, password } = req.body;
 
-  const user = await User.findOne({ email });
+    const user = await User.findOne({ 
+    $or: [{ email: identifier }, { username: identifier }] 
+  });
 
   if (user && (await user.matchPassword(password))) {
     // CRITICAL: Block login if user is not approved
