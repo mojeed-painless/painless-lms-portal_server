@@ -32,6 +32,7 @@ const registerUser = asyncHandler(async (req, res) => {
       username: user.username,
       email: user.email,
       role: user.role,
+      isApproved: user.isApproved,
       token: generateToken(user._id), // Send JWT to client
     });
   } else {

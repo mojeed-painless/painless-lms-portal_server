@@ -21,6 +21,10 @@ const protect = asyncHandler(async (req, res, next) => {
       // 4. Find the user based on the decoded ID (exclude password)
       req.user = await User.findById(decoded.id).select('-password');
 
+      if (!req.user.isApproved) {
+          res.status(403);
+          throw new Error('Account pending approval. Access denied.');
+      }
       // 5. Proceed to the next middleware/route handler
       next();
     } catch (error) {
