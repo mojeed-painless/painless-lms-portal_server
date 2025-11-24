@@ -136,9 +136,32 @@ const updateUserStatus = asyncHandler(async (req, res) => {
   }
 });
 
+// @desc    Delete a user permanently
+// @route   DELETE /api/users/admin/:id
+// @access  Private/Admin
+const deleteUser = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.params.id);
+
+  if (user) {
+    // Optional: Prevent admin from deleting themselves or other admins accidentally
+    if (user.role === 'admin' && req.user._id.toString() !== user._id.toString()) {
+        res.status(403);
+        throw new Error('Cannot delete another administrator.');
+    }
+
+    await User.deleteOne({ _id: user._id }); // Use deleteOne on the model
+
+    res.json({ message: 'User removed successfully' });
+  } else {
+    res.status(404);
+    throw new Error('User not found');
+  }
+});
+
 export { 
     authUser, 
     registerUser, 
     getPendingUsers, 
-    updateUserStatus 
+    updateUserStatus,
+    deleteUser // ⬅️ Export the new function
 };
