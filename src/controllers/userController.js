@@ -6,15 +6,14 @@ import User from '../models/User.js';
 // @route   POST /api/users/login
 // @access  Public
 const authUser = asyncHandler(async (req, res) => {
-  const { identifier, password } = req.body; // Changed 'email' to 'identifier'
+  const { identifier, password } = req.body;
 
-  // Find user by either email OR username
   const user = await User.findOne({ 
     $or: [{ email: identifier }, { username: identifier }] 
   });
 
   if (user && (await user.matchPassword(password))) {
-    // CRITICAL: Block login if user is not approved
+    
     if (!user.isApproved) {
         res.status(401);
         throw new Error('Account pending approval. Please wait for an administrator to activate your account.');
@@ -23,6 +22,8 @@ const authUser = asyncHandler(async (req, res) => {
     // If approved, send success response
     res.json({
       _id: user._id,
+      firstName: user.firstName,
+      lastName: user.lastName,
       username: user.username,
       email: user.email,
       role: user.role,
@@ -30,43 +31,49 @@ const authUser = asyncHandler(async (req, res) => {
     });
   } else {
     res.status(401);
-    // Use a generic message for security
-    throw new Error('Invalid username/email or password'); 
+      throw new Error('Invalid username/email or password'); 
   }
 });
+
+
+
+
+
+
 
 // @desc    Register a new user
 // @route   POST /api/users/register
 // @access  Public
 const registerUser = asyncHandler(async (req, res) => {
-  const { username, email, password, role } = req.body;
+  const { firstName, lastName, username, email, password, role } = req.body;
 
-  const userExists = await User.findOne({ email });
+  const userExists = await User.findOne({ 
+    $or: [{ email: identifier }, { username: identifier }] 
+  });
 
   if (userExists) {
     res.status(400);
     throw new Error('User already exists');
   }
 
-  // Determine initial approval status based on role
-  // Admins are generally created manually and approved. New instructors/students need approval.
-  const initialApprovalStatus = (role === 'admin'); // If they somehow register as admin (should be disabled in frontend), auto-approve. Otherwise, false.
+  const initialApprovalStatus = (role === 'admin');
 
   const user = await User.create({
+    firstName,
+    lastName,
     username,
     email,
     password,
     role: role || 'student', 
-    isApproved: initialApprovalStatus ? true : false, // New instructors/students are unapproved
+    isApproved: initialApprovalStatus ? true : false,
   });
 
   if (user) {
-    // On registration, we do NOT automatically log in unapproved users.
-    // They must manually log in to see the approval pending message.
     res.status(201).json({
       message: 'Registration successful. Account pending admin approval.',
-      // Only return minimal data
       _id: user._id,
+      firstName: user.firstName,
+      lastName: user.lastName,
       username: user.username,
       email: user.email,
       role: user.role,
@@ -78,14 +85,33 @@ const registerUser = asyncHandler(async (req, res) => {
   }
 });
 
+
+
+
+
+
+
+
+
+
+
+
+
+
 // @desc    Get all users pending approval
 // @route   GET /api/users/admin/pending
 // @access  Private/Admin
 const getPendingUsers = asyncHandler(async (req, res) => {
-  // Find all users who are NOT approved
+
   const users = await User.find({ isApproved: false }).select('-password');
   res.json(users);
 });
+
+
+
+
+
+
 
 // @desc    Approve/Reject a user and optionally change role
 // @route   PUT /api/users/admin/:id
@@ -94,7 +120,6 @@ const updateUserStatus = asyncHandler(async (req, res) => {
   const userId = req.params.id;
   const { isApproved, role } = req.body;
   
-  // Construct the fields to update
   const updateFields = {};
 
   if (isApproved !== undefined) {
@@ -103,7 +128,7 @@ const updateUserStatus = asyncHandler(async (req, res) => {
   
   const validRoles = ['student', 'instructor', 'admin'];
   if (role && validRoles.includes(role)) {
-    // Only allow setting role if it's one of the valid enum values
+
     updateFields.role = role;
   }
   
@@ -112,8 +137,6 @@ const updateUserStatus = asyncHandler(async (req, res) => {
       throw new Error('No valid fields provided for update.');
   }
 
-  // Use findByIdAndUpdate to only validate and update specified fields, 
-  // bypassing validation for unchanged required fields (like password).
   const updatedUser = await User.findByIdAndUpdate(
     userId,
     { $set: updateFields },
@@ -126,6 +149,8 @@ const updateUserStatus = asyncHandler(async (req, res) => {
   if (updatedUser) {
     res.json({
       _id: updatedUser._id,
+      firstName: updatedUser.firstName,
+      lastName: updatedUser.lastName,
       username: updatedUser.username,
       isApproved: updatedUser.isApproved,
       role: updatedUser.role,
@@ -136,6 +161,13 @@ const updateUserStatus = asyncHandler(async (req, res) => {
   }
 });
 
+
+
+
+
+
+
+
 // @desc    Delete a user permanently
 // @route   DELETE /api/users/admin/:id
 // @access  Private/Admin
@@ -143,13 +175,12 @@ const deleteUser = asyncHandler(async (req, res) => {
   const user = await User.findById(req.params.id);
 
   if (user) {
-    // Optional: Prevent admin from deleting themselves or other admins accidentally
     if (user.role === 'admin' && req.user._id.toString() !== user._id.toString()) {
         res.status(403);
         throw new Error('Cannot delete another administrator.');
     }
 
-    await User.deleteOne({ _id: user._id }); // Use deleteOne on the model
+    await User.deleteOne({ _id: user._id });
 
     res.json({ message: 'User removed successfully' });
   } else {
@@ -170,7 +201,7 @@ const deleteUser = asyncHandler(async (req, res) => {
 // @route   GET /api/users/admin/all
 // @access  Private/Admin
 const getAllUsers = asyncHandler(async (req, res) => {
-  // Find all users *except* the currently logged-in admin (optional, but good practice)
+ 
   const users = await User.find({ _id: { $ne: req.user._id } }).select('-password');
   res.json(users);
 });

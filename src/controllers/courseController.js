@@ -1,5 +1,3 @@
-// lms-backend/src/controllers/courseController.js
-
 import asyncHandler from 'express-async-handler';
 import Course from '../models/Course.js';
 import Lesson from '../models/Lesson.js';
@@ -13,7 +11,7 @@ const getCourses = asyncHandler(async (req, res) => {
   // from the User model instead of just getting the ID.
   const courses = await Course.find({ isPublished: true }).populate(
     'instructor', 
-    'username' // Only select the 'username' field from the User model
+    'username' // Only select the 'username' field from the User model                                    
   );
 
   res.json(courses);

@@ -6,26 +6,22 @@ import User from '../models/User.js';
 const protect = asyncHandler(async (req, res, next) => {
   let token;
 
-  // 1. Check if the Authorization header exists and starts with 'Bearer'
   if (
     req.headers.authorization &&
     req.headers.authorization.startsWith('Bearer')
   ) {
     try {
-      // 2. Extract the token (Token is after "Bearer ")
       token = req.headers.authorization.split(' ')[1];
 
-      // 3. Verify the token using the secret key
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-      // 4. Find the user based on the decoded ID (exclude password)
       req.user = await User.findById(decoded.id).select('-password');
 
       if (!req.user.isApproved) {
           res.status(403);
           throw new Error('Account pending approval. Access denied.');
       }
-      // 5. Proceed to the next middleware/route handler
+      
       next();
     } catch (error) {
       console.error(error);
@@ -34,7 +30,6 @@ const protect = asyncHandler(async (req, res, next) => {
     }
   }
 
-  // If no token is found
   if (!token) {
     res.status(401);
     throw new Error('Not authorized, no token');
@@ -45,14 +40,15 @@ const protect = asyncHandler(async (req, res, next) => {
 
 
 
+
+
 // --- 2. Middleware for specific role check (Authorization) ---
 const instructor = (req, res, next) => {
-  // Check if the user is authenticated (from the protect middleware) 
-  // AND has the 'instructor' role
+
   if (req.user && req.user.role === 'instructor') {
-    next(); // Authorized, proceed
+    next();
   } else {
-    res.status(403); // 403 Forbidden
+    res.status(403);
     throw new Error('Not authorized as an instructor');
   }
 };
@@ -65,11 +61,11 @@ const instructor = (req, res, next) => {
 
 // --- 3. Middleware for admin role check (Authorization) ---
 const admin = (req, res, next) => {
-  // Check if the user is authenticated AND has the 'admin' role
+
   if (req.user && req.user.role === 'admin') {
-    next(); // Authorized, proceed
+    next();
   } else {
-    res.status(403); // 403 Forbidden
+    res.status(403);
     throw new Error('Not authorized as an administrator');
   }
 };
