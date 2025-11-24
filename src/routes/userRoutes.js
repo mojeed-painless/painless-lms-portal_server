@@ -5,16 +5,18 @@ import {
     getPendingUsers, 
     updateUserStatus,
     deleteUser,
-    getAllUsers
+    getAllUsers,
 } from '../controllers/userController.js';
 import { protect, admin } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
-
+const adminRouter = express.Router();
 // Public routes
 router.post('/login', authUser);
 router.post('/register', registerUser);
 
+// Admin routes (Protected by 'protect' AND 'admin' middleware)
+// GET /api/users/admin/pending
 router.use('/admin', protect, admin, adminRouter);
 
 // Routes defined on adminRouter (prefixed by /api/users/admin)
