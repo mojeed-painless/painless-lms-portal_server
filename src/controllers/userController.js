@@ -6,9 +6,10 @@ import User from '../models/User.js';
 // @route   POST /api/users/login
 // @access  Public
 const authUser = asyncHandler(async (req, res) => {
-  const { email, password } = req.body;
+  const { identifier, password } = req.body; // Changed 'email' to 'identifier'
 
-    const user = await User.findOne({ 
+  // Find user by either email OR username
+  const user = await User.findOne({ 
     $or: [{ email: identifier }, { username: identifier }] 
   });
 
@@ -29,7 +30,8 @@ const authUser = asyncHandler(async (req, res) => {
     });
   } else {
     res.status(401);
-    throw new Error('Invalid credentials (Username/Email or Password)');
+    // Use a generic message for security
+    throw new Error('Invalid username/email or password'); 
   }
 });
 
