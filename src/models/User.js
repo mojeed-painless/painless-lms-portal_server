@@ -3,52 +3,18 @@ import bcrypt from 'bcryptjs';
 
 const userSchema = mongoose.Schema(
   {
-    firstName: {
-      type: String,
-      required: true,
-    },
-    lastName: {
-      type: String,
-      required: true,
-    },
-    username: {
-      type: String,
-      required: true,
-      unique: true,
-    },
-    email: {
-      type: String,
-      required: true,
-      unique: true,
-    },
-    password: {
-      type: String,
-      required: true,
-    },
-    role: {
-      type: String,
-      enum: ['student', 'instructor', 'admin'],
-      required: true,
-      default: 'student',
-    },
-    isApproved: {
-      type: Boolean,
-      required: true,
-      default: false,
-    },
-    htmlAccess: {
-      type: Boolean,
-      default: false,
-    },
-    jsAccess: {
-      type: Boolean,
-      default: false,
-    },
-    reactAccess: {
-      type: Boolean,
-      default: false,
-    },
+    firstName: { type: String, required: true },
+    lastName: { type: String, required: true, },
+    username: { type: String, required: true, unique: true, },
+    email: { type: String, required: true, unique: true, },
+    password: { type: String, required: true, },
+    role: { type: String, enum: ['student', 'instructor', 'admin'], required: true, default: 'student', },
+    isApproved: { type: Boolean, required: true, default: false, },
+    htmlAccess: { type: Boolean, default: false, },
+    jsAccess: { type: Boolean, default: false, },
+    reactAccess: { type: Boolean, default: false, },
   },
+  
   {
     timestamps: true, // Adds createdAt and updatedAt fields
   }

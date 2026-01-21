@@ -223,8 +223,14 @@ const deleteUser = asyncHandler(async (req, res) => {
 // @access  Private/Admin
 const getAllUsers = asyncHandler(async (req, res) => {
  
-  const users = await User.find({ _id: { $ne: req.user._id } }).select('-password');
-  res.json(users);
+  const users = await User.find({ _id: { $ne: req.user._id } }).select('-password').lean();
+  const usersWithDefaults = users.map(user => ({
+    ...user,
+    htmlAccess: user.htmlAccess ?? false,
+    jsAccess: user.jsAccess ?? false,
+    reactAccess: user.reactAccess ?? false,
+  }));
+  res.json(usersWithDefaults);
 });
 
 export { 
