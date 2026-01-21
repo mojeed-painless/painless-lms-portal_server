@@ -27,9 +27,9 @@ const authUser = asyncHandler(async (req, res) => {
       username: user.username,
       email: user.email,
       role: user.role,
-      htmlAccess: user.htmlAccess,
-      jsAccess: user.jsAccess,
-      reactAccess: user.reactAccess,
+      htmlAccess: user.htmlAccess ?? false,
+      jsAccess: user.jsAccess ?? false,
+      reactAccess: user.reactAccess ?? false,
       token: generateToken(user._id),
     });
   } else {
@@ -110,8 +110,14 @@ const registerUser = asyncHandler(async (req, res) => {
 // @access  Private/Admin
 const getPendingUsers = asyncHandler(async (req, res) => {
 
-  const users = await User.find({ isApproved: false }).select('-password');
-  res.json(users);
+  const users = await User.find({ isApproved: false }).select('-password').lean();
+  const usersWithDefaults = users.map(user => ({
+    ...user,
+    htmlAccess: user.htmlAccess ?? false,
+    jsAccess: user.jsAccess ?? false,
+    reactAccess: user.reactAccess ?? false,
+  }));
+  res.json(usersWithDefaults);
 });
 
 
