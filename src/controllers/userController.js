@@ -141,7 +141,6 @@ const updateUserStatus = asyncHandler(async (req, res) => {
   
   const validRoles = ['student', 'instructor', 'admin'];
   if (role && validRoles.includes(role)) {
-
     updateFields.role = role;
   }
 
@@ -158,17 +157,17 @@ const updateUserStatus = asyncHandler(async (req, res) => {
   
   if (Object.keys(updateFields).length === 0) {
       res.status(400);
-      throw new Error('No valid fields provided for update.');
+      throw new Error(`No valid fields provided for update. Received body: ${JSON.stringify(req.body)}`);
   }
 
   const updatedUser = await User.findByIdAndUpdate(
     userId,
     { $set: updateFields },
     { 
-      new: true, // Return the updated document
-      runValidators: false, // Don't validate all fields, only the updated ones
+      new: true,
+      runValidators: false,
     }
-  ).select('-password'); // Exclude the password from the response
+  ).select('-password');
 
   if (updatedUser) {
     res.json({
