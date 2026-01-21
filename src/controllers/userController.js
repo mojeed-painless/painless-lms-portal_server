@@ -166,7 +166,7 @@ const updateUserStatus = asyncHandler(async (req, res) => {
     { $set: updateFields },
     { 
       new: true, // Return the updated document
-      runValidators: true, // Run validators only on the fields we are changing
+      runValidators: false, // Don't validate all fields, only the updated ones
     }
   ).select('-password'); // Exclude the password from the response
 
