@@ -67,6 +67,9 @@ const registerUser = asyncHandler(async (req, res) => {
     password,
     role: role || 'student', 
     isApproved: initialApprovalStatus ? true : false,
+    htmlAccess: false,
+    jsAccess: false,
+    reactAccess: false,
   });
 
   if (user) {
@@ -79,6 +82,9 @@ const registerUser = asyncHandler(async (req, res) => {
       email: user.email,
       role: user.role,
       isApproved: user.isApproved,
+      htmlAccess: user.htmlAccess,
+      jsAccess: user.jsAccess,
+      reactAccess: user.reactAccess,
     });
   } else {
     res.status(400);
