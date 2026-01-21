@@ -36,6 +36,18 @@ const userSchema = mongoose.Schema(
       required: true,
       default: false,
     },
+    htmlAccess: {
+      type: Boolean,
+      default: false,
+    },
+    jsAccess: {
+      type: Boolean,
+      default: false,
+    },
+    reactAccess: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true, // Adds createdAt and updatedAt fields

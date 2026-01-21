@@ -27,6 +27,9 @@ const authUser = asyncHandler(async (req, res) => {
       username: user.username,
       email: user.email,
       role: user.role,
+      htmlAccess: user.htmlAccess,
+      jsAccess: user.jsAccess,
+      reactAccess: user.reactAccess,
       token: generateToken(user._id),
     });
   } else {
@@ -47,9 +50,7 @@ const authUser = asyncHandler(async (req, res) => {
 const registerUser = asyncHandler(async (req, res) => {
   const { firstName, lastName, username, email, password, role } = req.body;
 
-  const userExists = await User.findOne({ 
-    $or: [ { email }, { username } ] 
-  });
+  const userExists = await User.findOne({ email });
 
   if (userExists) {
     res.status(400);
@@ -118,7 +119,7 @@ const getPendingUsers = asyncHandler(async (req, res) => {
 // @access  Private/Admin
 const updateUserStatus = asyncHandler(async (req, res) => {
   const userId = req.params.id;
-  const { isApproved, role } = req.body;
+  const { isApproved, role, htmlAccess, jsAccess, reactAccess } = req.body;
   
   const updateFields = {};
 
@@ -130,6 +131,17 @@ const updateUserStatus = asyncHandler(async (req, res) => {
   if (role && validRoles.includes(role)) {
 
     updateFields.role = role;
+  }
+
+  // Handle course access fields
+  if (htmlAccess !== undefined) {
+    updateFields.htmlAccess = htmlAccess;
+  }
+  if (jsAccess !== undefined) {
+    updateFields.jsAccess = jsAccess;
+  }
+  if (reactAccess !== undefined) {
+    updateFields.reactAccess = reactAccess;
   }
   
   if (Object.keys(updateFields).length === 0) {
@@ -154,6 +166,9 @@ const updateUserStatus = asyncHandler(async (req, res) => {
       username: updatedUser.username,
       isApproved: updatedUser.isApproved,
       role: updatedUser.role,
+      htmlAccess: updatedUser.htmlAccess,
+      jsAccess: updatedUser.jsAccess,
+      reactAccess: updatedUser.reactAccess,
     });
   } else {
     res.status(404);
