@@ -30,6 +30,7 @@ const authUser = asyncHandler(async (req, res) => {
       htmlAccess: user.htmlAccess ?? false,
       jsAccess: user.jsAccess ?? false,
       reactAccess: user.reactAccess ?? false,
+      completedLessons: user.completedLessons || [],
       token: generateToken(user._id),
     });
   } else {
