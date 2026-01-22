@@ -23,8 +23,6 @@ router.route('/progress')
     .get(getProgress)
     .put(updateProgress);
 
-router.use('/admin', admin, adminRouter);
-
 adminRouter.route('/pending')
     .get(getPendingUsers); 
 
@@ -33,6 +31,8 @@ adminRouter.route('/all')
 
 adminRouter.route('/:id')
     .put(updateUserStatus)
-    .delete(deleteUser); 
+    .delete(deleteUser);
+
+router.use('/admin', admin, adminRouter);
 
 export default router;
