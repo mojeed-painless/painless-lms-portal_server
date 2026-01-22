@@ -238,11 +238,57 @@ const getAllUsers = asyncHandler(async (req, res) => {
   res.json(usersWithDefaults);
 });
 
+// @desc    Get user's progress (completed lessons)
+// @route   GET /api/users/progress
+// @access  Private
+const getProgress = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.user._id).select('completedLessons');
+
+  if (!user) {
+    res.status(404);
+    throw new Error('User not found');
+  }
+
+  res.json({
+    completedLessons: user.completedLessons || [],
+  });
+});
+
+// @desc    Update user's progress (mark lesson as complete)
+// @route   PUT /api/users/progress
+// @access  Private
+const updateProgress = asyncHandler(async (req, res) => {
+  const { completedLessons } = req.body;
+
+  if (!Array.isArray(completedLessons)) {
+    res.status(400);
+    throw new Error('completedLessons must be an array');
+  }
+
+  const user = await User.findByIdAndUpdate(
+    req.user._id,
+    { completedLessons: completedLessons },
+    { new: true }
+  ).select('completedLessons');
+
+  if (!user) {
+    res.status(404);
+    throw new Error('User not found');
+  }
+
+  res.json({
+    message: 'Progress updated successfully',
+    completedLessons: user.completedLessons,
+  });
+});
+
 export { 
     authUser, 
     registerUser, 
     getPendingUsers, 
     updateUserStatus,
     deleteUser,
-    getAllUsers
+    getAllUsers,
+    getProgress,
+    updateProgress
 };

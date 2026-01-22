@@ -13,6 +13,10 @@ const userSchema = mongoose.Schema(
     htmlAccess: { type: Boolean, default: false, },
     jsAccess: { type: Boolean, default: false, },
     reactAccess: { type: Boolean, default: false, },
+    completedLessons: {
+      type: [String], // Array of lesson paths
+      default: [],
+    },
   },
   
   {

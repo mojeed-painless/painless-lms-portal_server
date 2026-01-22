@@ -6,6 +6,8 @@ import {
     updateUserStatus,
     deleteUser,
     getAllUsers,
+    getProgress,
+    updateProgress,
 } from '../controllers/userController.js';
 import { protect, admin } from '../middleware/authMiddleware.js';
 
@@ -15,7 +17,13 @@ const adminRouter = express.Router();
 router.post('/login', authUser);
 router.post('/register', registerUser);
 
-router.use('/admin', protect, admin, adminRouter);
+router.use(protect);
+
+router.route('/progress')
+    .get(getProgress)
+    .put(updateProgress);
+
+router.use('/admin', admin, adminRouter);
 
 adminRouter.route('/pending')
     .get(getPendingUsers); 
