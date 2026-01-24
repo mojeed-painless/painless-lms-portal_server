@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 import cors from 'cors';
 import userRoutes from './src/routes/userRoutes.js';
 import courseRoutes from './src/routes/courseRoutes.js';
+import assignmentRoutes from './src/routes/assignmentRoutes.js';
 import { notFound, errorHandler } from './src/middleware/errorMiddleware.js';
 
 dotenv.config();
@@ -51,6 +52,7 @@ app.get('/', (req, res) => {
 
 app.use('/api/users', userRoutes);
 app.use('/api/courses', courseRoutes);
+app.use('/api/assignments', assignmentRoutes);
 
 
 
