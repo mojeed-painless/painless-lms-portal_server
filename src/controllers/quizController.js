@@ -38,7 +38,7 @@ export const addDailyQuestion = asyncHandler(async (req, res) => {
   const quizStatus = getQuizWindowStatus();
   if (!quizStatus.isQuizWindow) {
     res.status(400);
-    throw new Error('Questions can only be added during quiz window (8:00 PM - 8:02 PM)');
+    throw new Error('Questions can only be added during quiz window (9:30 PM - 9:32 PM)');
   }
 
   const today = getTodayDate();
@@ -144,7 +144,7 @@ export const submitQuiz = asyncHandler(async (req, res) => {
   const submissionDate = new Date(submittedAt);
   if (!isSubmissionWithinWindow(submissionDate)) {
     res.status(400);
-    throw new Error('Quiz window has closed (ends at 8:02 PM)');
+    throw new Error('Quiz window has closed (ends at 9:32 PM)');
   }
 
   // Validate timeTaken
@@ -247,7 +247,7 @@ export const getDailyLeaderboard = asyncHandler(async (req, res) => {
       date: queryDate,
       quizLive: true,
       leaderboard: [],
-      message: 'Leaderboard will be available after quiz ends at 8:02 PM',
+      message: 'Leaderboard will be available after quiz ends at 9:32 PM',
       totalParticipants: submissions.length,
     });
   }
