@@ -15,9 +15,9 @@ export const getQuizWindowStatus = () => {
   const seconds = now.getSeconds();
 
   // 15:32:00 to 15:33:59 (3:32 PM to 3:33:59 PM)
-  const quizStartHour = 15;
-  const quizStartMinute = 50;
-  const quizEndMinute = 52;
+  const quizStartHour = 16;
+  const quizStartMinute = 15;
+  const quizEndMinute = 30;
 
   const isQuizWindow =
     hours === quizStartHour &&
@@ -69,7 +69,7 @@ export const isQuizWindowClosed = () => {
   const minutes = now.getMinutes();
 
   // Quiz ends at 3:34 PM (15:34)
-  return hours > 15 || (hours === 15 && minutes >= 52);
+  return hours > 16 || (hours === 16 && minutes >= 30);
 };
 
 /**
@@ -143,9 +143,9 @@ export const isSubmissionWithinWindow = (submittedAt) => {
 
   // Must be submitted between 8:00 PM and 8:02 PM
   return (
-    hours === 15 &&
-    minutes >= 0 &&
-    minutes < 52
+    hours === 16 &&
+    minutes >= 15 &&
+    minutes < 30
   );
 };
 

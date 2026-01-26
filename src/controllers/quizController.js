@@ -132,6 +132,55 @@ export const getTodayQuestions = asyncHandler(async (req, res) => {
 });
 
 /**
+ * @desc    Check if user has already attempted today's quiz
+ * @route   GET /api/quizzes/daily/check-attempt
+ * @access  Private
+ */
+export const checkAttempt = asyncHandler(async (req, res) => {
+  const { date } = req.query;
+  const queryDate = date || getTodayDate();
+  const userId = req.user._id;
+
+  console.log(`🔍 [CHECK ATTEMPT] Checking quiz attempt for user ${userId} on date ${queryDate}`);
+
+  // Validate date format (YYYY-MM-DD)
+  const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+  if (!dateRegex.test(queryDate)) {
+    res.status(400);
+    throw new Error('Date must be in format YYYY-MM-DD');
+  }
+
+  // Check if user has already attempted the quiz
+  const submission = await QuizSubmission.findOne({
+    studentId: userId,
+    date: queryDate,
+  });
+
+  if (submission) {
+    console.log(`✅ [CHECK ATTEMPT] User has already attempted quiz on ${queryDate}`);
+    return res.json({
+      hasAttempted: true,
+      submissionId: submission._id,
+      score: {
+        correctAnswers: submission.correctAnswers,
+        totalQuestions: submission.totalQuestions,
+        percentage: submission.percentage,
+      },
+      rank: submission.rank,
+      badge: submission.badge,
+      bonusPoints: submission.bonusPoints,
+      totalPoints: submission.totalPoints,
+      submittedAt: submission.submittedAt,
+    });
+  }
+
+  console.log(`✅ [CHECK ATTEMPT] User has not attempted quiz on ${queryDate}`);
+  return res.json({
+    hasAttempted: false,
+  });
+});
+
+/**
  * @desc    Submit quiz answers
  * @route   POST /api/quizzes/daily/submit
  * @access  Private

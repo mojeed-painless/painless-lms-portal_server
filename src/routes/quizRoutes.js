@@ -2,6 +2,7 @@ import express from 'express';
 import {
   addDailyQuestion,
   getTodayQuestions,
+  checkAttempt,
   submitQuiz,
   getDailyLeaderboard,
   getQuizHistory,
@@ -17,6 +18,9 @@ const router = express.Router();
 
 // Protected routes (authentication required)
 router.use(protect);
+
+// Check if user has already attempted today's quiz
+router.get('/daily/check-attempt', checkAttempt);
 
 // Get today's quiz questions
 router.get('/daily/questions', getTodayQuestions);
