@@ -1,6 +1,7 @@
 import asyncHandler from 'express-async-handler';
 import DailyQuiz from '../models/DailyQuiz.js';
 import QuizSubmission from '../models/QuizSubmission.js';
+import QuizSettings from '../models/QuizSettings.js';
 import {
   getQuizWindowStatus,
   getTodayDate,
@@ -553,5 +554,93 @@ export const getTopPerformers = asyncHandler(async (req, res) => {
         thirdPlace: performer.totalRank3,
       },
     })),
+  });
+});
+
+/**
+ * @desc    Get quiz settings (release time and duration)
+ * @route   GET /api/quizzes/settings
+ * @access  Private
+ */
+export const getQuizSettings = asyncHandler(async (req, res) => {
+  console.log('🔍 [GET SETTINGS] Fetching quiz settings');
+
+  let settings = await QuizSettings.findOne();
+
+  // If no settings exist, create default ones
+  if (!settings) {
+    console.log('📝 [GET SETTINGS] No settings found, creating defaults');
+    settings = new QuizSettings({
+      releaseTime: '15:32',
+      duration: 2,
+    });
+    await settings.save();
+  }
+
+  console.log('✅ [GET SETTINGS] Settings retrieved:', {
+    releaseTime: settings.releaseTime,
+    duration: settings.duration,
+  });
+
+  res.json({
+    releaseTime: settings.releaseTime,
+    duration: settings.duration,
+  });
+});
+
+/**
+ * @desc    Update quiz settings (release time and duration)
+ * @route   PUT /api/quizzes/settings
+ * @access  Private/Admin
+ */
+export const updateQuizSettings = asyncHandler(async (req, res) => {
+  const { releaseTime, duration } = req.body;
+
+  console.log('📝 [UPDATE SETTINGS] Received request:', { releaseTime, duration });
+
+  // Validate required fields
+  if (!releaseTime || duration === undefined) {
+    res.status(400);
+    throw new Error('Missing required fields: releaseTime, duration');
+  }
+
+  // Validate releaseTime format (HH:MM)
+  const timeRegex = /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/;
+  if (!timeRegex.test(releaseTime)) {
+    res.status(400);
+    throw new Error('Release time must be in HH:MM format (24-hour)');
+  }
+
+  // Validate duration
+  if (typeof duration !== 'number' || duration <= 0 || duration > 60) {
+    res.status(400);
+    throw new Error('Duration must be a positive number between 1 and 60 minutes');
+  }
+
+  // Find existing settings or create new ones
+  let settings = await QuizSettings.findOne();
+
+  if (!settings) {
+    console.log('📝 [UPDATE SETTINGS] Creating new settings document');
+    settings = new QuizSettings({
+      releaseTime,
+      duration,
+    });
+  } else {
+    settings.releaseTime = releaseTime;
+    settings.duration = duration;
+  }
+
+  await settings.save();
+
+  console.log('✅ [UPDATE SETTINGS] Settings updated successfully:', {
+    releaseTime: settings.releaseTime,
+    duration: settings.duration,
+  });
+
+  res.json({
+    releaseTime: settings.releaseTime,
+    duration: settings.duration,
+    message: 'Settings updated successfully',
   });
 });

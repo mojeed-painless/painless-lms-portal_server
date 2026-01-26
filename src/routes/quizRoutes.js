@@ -8,6 +8,8 @@ import {
   getQuizHistory,
   getSubmissionDetails,
   getTopPerformers,
+  getQuizSettings,
+  updateQuizSettings,
 } from '../controllers/quizController.js';
 import { protect, admin } from '../middleware/authMiddleware.js';
 
@@ -24,6 +26,9 @@ router.get('/daily/check-attempt', checkAttempt);
 
 // Get today's quiz questions
 router.get('/daily/questions', getTodayQuestions);
+
+// Get quiz settings (accessible to all authenticated users)
+router.get('/settings', getQuizSettings);
 
 // Submit quiz answers
 router.post('/daily/submit', submitQuiz);
@@ -42,6 +47,9 @@ router.get('/top-performers', getTopPerformers);
 
 // Admin routes (admin only)
 router.use(admin);
+
+// Update quiz settings (admin only)
+router.put('/settings', updateQuizSettings);
 
 // Add question to daily quiz (admin only)
 router.post('/daily/add-question', addDailyQuestion);
