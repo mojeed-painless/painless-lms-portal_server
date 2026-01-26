@@ -4,7 +4,7 @@
  */
 
 /**
- * Check if current time is within the quiz window (9:30 PM - 9:32 PM)
+ * Check if current time is within the quiz window (3:32 PM - 3:34 PM)
  * Quiz window is 2 minutes (120 seconds)
  * @returns {Object} { isQuizWindow: boolean, timeRemaining: number in seconds }
  */
@@ -14,10 +14,10 @@ export const getQuizWindowStatus = () => {
   const minutes = now.getMinutes();
   const seconds = now.getSeconds();
 
-  // 21:30:00 to 21:31:59 (9:30 PM to 9:31:59 PM)
-  const quizStartHour = 14;
-  const quizStartMinute = 35;
-  const quizEndMinute = 37;
+  // 15:32:00 to 15:33:59 (3:32 PM to 3:33:59 PM)
+  const quizStartHour = 15;
+  const quizStartMinute = 36;
+  const quizEndMinute = 38;
 
   const isQuizWindow =
     hours === quizStartHour &&
@@ -27,7 +27,7 @@ export const getQuizWindowStatus = () => {
     return {
       isQuizWindow: false,
       timeRemaining: 0,
-      message: 'Quiz window is not active. Available: 9:30 PM - 9:32 PM',
+      message: 'Quiz window is not active. Available: 3:32 PM - 3:34 PM',
     };
   }
 
@@ -68,8 +68,8 @@ export const isQuizWindowClosed = () => {
   const hours = now.getHours();
   const minutes = now.getMinutes();
 
-  // Quiz ends at 8:02 PM (20:02)
-  return hours > 20 || (hours === 20 && minutes >= 2);
+  // Quiz ends at 3:34 PM (15:34)
+  return hours > 15 || (hours === 15 && minutes >= 38);
 };
 
 /**
