@@ -15,7 +15,7 @@ export const getQuizWindowStatus = () => {
   const seconds = now.getSeconds();
 
   // 21:30:00 to 21:31:59 (9:30 PM to 9:31:59 PM)
-  const quizStartHour = 21;
+  const quizStartHour = 13;
   const quizStartMinute = 30;
   const quizEndMinute = 32;
 
