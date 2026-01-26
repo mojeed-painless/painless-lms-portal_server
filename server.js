@@ -4,7 +4,9 @@ import cors from 'cors';
 import userRoutes from './src/routes/userRoutes.js';
 import courseRoutes from './src/routes/courseRoutes.js';
 import assignmentRoutes from './src/routes/assignmentRoutes.js';
+import quizRoutes from './src/routes/quizRoutes.js';
 import { notFound, errorHandler } from './src/middleware/errorMiddleware.js';
+import { scheduleDailyRankingCalculation } from './src/utils/scheduler.js';
 
 dotenv.config();
 
@@ -53,6 +55,7 @@ app.get('/', (req, res) => {
 app.use('/api/users', userRoutes);
 app.use('/api/courses', courseRoutes);
 app.use('/api/assignments', assignmentRoutes);
+app.use('/api/quizzes', quizRoutes);
 
 
 
@@ -72,5 +75,8 @@ const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
   console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
-  connectDB(); 
+  connectDB();
+  
+  // Initialize daily ranking scheduler
+  scheduleDailyRankingCalculation();
 });
