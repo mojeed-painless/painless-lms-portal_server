@@ -22,6 +22,8 @@ import mongoose from 'mongoose';
 export const addDailyQuestion = asyncHandler(async (req, res) => {
   const { question, image, options, correctAnswer, date } = req.body;
 
+  console.log('📝 [ADD QUESTION] Received request:', { question: question?.substring(0, 50), date, options: !!options, correctAnswer });
+
   // Validate required fields
   if (!question || !options || !correctAnswer || !date) {
     res.status(400);
@@ -51,6 +53,7 @@ export const addDailyQuestion = asyncHandler(async (req, res) => {
   let dailyQuiz = await DailyQuiz.findOne({ date });
 
   if (!dailyQuiz) {
+    console.log(`📝 Creating new DailyQuiz for date: ${date}`);
     dailyQuiz = new DailyQuiz({ date });
   }
 
@@ -73,6 +76,8 @@ export const addDailyQuestion = asyncHandler(async (req, res) => {
   dailyQuiz.isActive = true;
   await dailyQuiz.save();
 
+  console.log(`✅ [ADD QUESTION] Question saved successfully for date ${date}`);
+
   res.status(201).json({
     id: newQuestion._id,
     date,
@@ -92,6 +97,9 @@ export const getTodayQuestions = asyncHandler(async (req, res) => {
   const { date } = req.query;
   const queryDate = date || getTodayDate();
 
+  console.log(`🔍 [GET QUESTIONS] Fetching questions for date: ${queryDate}`);
+  console.log(`🔍 [GET QUESTIONS] All DailyQuiz documents in DB:`, await DailyQuiz.find({}).select('date questions'));
+
   // Validate date format (YYYY-MM-DD)
   const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
   if (!dateRegex.test(queryDate)) {
@@ -101,8 +109,11 @@ export const getTodayQuestions = asyncHandler(async (req, res) => {
 
   const dailyQuiz = await DailyQuiz.findOne({ date: queryDate });
 
+  console.log(`🔍 [GET QUESTIONS] Query result for ${queryDate}:`, dailyQuiz ? `Found ${dailyQuiz.questions.length} questions` : 'No document found');
+
   // Return empty array if no questions exist
   if (!dailyQuiz || dailyQuiz.questions.length === 0) {
+    console.log(`📭 No questions found for ${queryDate}`);
     return res.json([]);
   }
 
@@ -116,6 +127,7 @@ export const getTodayQuestions = asyncHandler(async (req, res) => {
     correctAnswer: q.correctAnswer,
   }));
 
+  console.log(`✅ [GET QUESTIONS] Found ${formattedQuestions.length} questions for ${queryDate}`);
   res.json(formattedQuestions);
 });
 

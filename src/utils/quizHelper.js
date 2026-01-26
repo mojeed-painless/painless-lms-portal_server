@@ -47,12 +47,16 @@ export const getQuizWindowStatus = () => {
 };
 
 /**
- * Get today's date in YYYY-MM-DD format
+ * Get today's date in YYYY-MM-DD format (UTC)
+ * Ensures consistency across all timezones
  * @returns {string}
  */
 export const getTodayDate = () => {
-  const today = new Date();
-  return today.toISOString().split('T')[0];
+  const now = new Date();
+  const year = now.getUTCFullYear();
+  const month = String(now.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(now.getUTCDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 };
 
 /**
