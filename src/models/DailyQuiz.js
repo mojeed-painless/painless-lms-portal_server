@@ -54,7 +54,4 @@ const dailyQuizSchema = mongoose.Schema(
   }
 );
 
-// Index for faster queries
-dailyQuizSchema.index({ date: 1 });
-
 export default mongoose.model('DailyQuiz', dailyQuizSchema);
