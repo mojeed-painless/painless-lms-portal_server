@@ -20,12 +20,18 @@ import mongoose from 'mongoose';
  * @access  Private/Admin
  */
 export const addDailyQuestion = asyncHandler(async (req, res) => {
-  const { question, optionA, optionB, optionC, optionD, correctAnswer } = req.body;
+  const { question, image, options, correctAnswer, date } = req.body;
 
   // Validate required fields
-  if (!question || !optionA || !optionB || !optionC || !optionD || !correctAnswer) {
+  if (!question || !options || !correctAnswer || !date) {
     res.status(400);
-    throw new Error('All fields are required: question, optionA, optionB, optionC, optionD, correctAnswer');
+    throw new Error('All fields are required: question, options (A, B, C, D), correctAnswer, date');
+  }
+
+  // Validate options object has all required keys
+  if (!options.A || !options.B || !options.C || !options.D) {
+    res.status(400);
+    throw new Error('Options must include all keys: A, B, C, D');
   }
 
   // Validate correctAnswer is valid
@@ -34,40 +40,30 @@ export const addDailyQuestion = asyncHandler(async (req, res) => {
     throw new Error('Correct answer must be A, B, C, or D');
   }
 
-  // Check if quiz window is active
-  const quizStatus = getQuizWindowStatus();
-  if (!quizStatus.isQuizWindow) {
+  // Validate date format (YYYY-MM-DD)
+  const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+  if (!dateRegex.test(date)) {
     res.status(400);
-    throw new Error('Questions can only be added during quiz window (9:30 PM - 9:32 PM)');
+    throw new Error('Date must be in format YYYY-MM-DD');
   }
 
-  const today = getTodayDate();
-
-  // Find or create today's quiz
-  let dailyQuiz = await DailyQuiz.findOne({ date: today });
+  // Find or create quiz for the specified date
+  let dailyQuiz = await DailyQuiz.findOne({ date });
 
   if (!dailyQuiz) {
-    dailyQuiz = new DailyQuiz({ date: today });
-  }
-
-  // Handle image upload if provided
-  let imageUrl = null;
-  if (req.file) {
-    // If using cloud storage (e.g., Cloudinary), store URL here
-    // For now, we'll store the buffer or file path
-    imageUrl = `/uploads/${req.file.filename}`;
+    dailyQuiz = new DailyQuiz({ date });
   }
 
   // Add new question
   const newQuestion = {
     _id: new mongoose.Types.ObjectId(),
     question,
-    image: imageUrl,
+    image: image || null,
     options: {
-      A: optionA,
-      B: optionB,
-      C: optionC,
-      D: optionD,
+      A: options.A,
+      B: options.B,
+      C: options.C,
+      D: options.D,
     },
     correctAnswer,
     addedAt: new Date(),
@@ -78,52 +74,49 @@ export const addDailyQuestion = asyncHandler(async (req, res) => {
   await dailyQuiz.save();
 
   res.status(201).json({
-    success: true,
-    message: 'Question added successfully',
-    questionId: newQuestion._id,
-    date: today,
-    totalQuestionsToday: dailyQuiz.questions.length,
+    id: newQuestion._id,
+    date,
+    question,
+    image: newQuestion.image,
+    options: newQuestion.options,
+    correctAnswer,
   });
 });
 
 /**
- * @desc    Get today's quiz questions
- * @route   GET /api/quizzes/daily/questions
+ * @desc    Get quiz questions for a specific date
+ * @route   GET /api/quizzes/daily/questions?date=YYYY-MM-DD
  * @access  Private
  */
 export const getTodayQuestions = asyncHandler(async (req, res) => {
-  const today = getTodayDate();
-  const quizStatus = getQuizWindowStatus();
+  const { date } = req.query;
+  const queryDate = date || getTodayDate();
 
-  let dailyQuiz = await DailyQuiz.findOne({ date: today });
+  // Validate date format (YYYY-MM-DD)
+  const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+  if (!dateRegex.test(queryDate)) {
+    res.status(400);
+    throw new Error('Date must be in format YYYY-MM-DD');
+  }
 
+  const dailyQuiz = await DailyQuiz.findOne({ date: queryDate });
+
+  // Return empty array if no questions exist
   if (!dailyQuiz || dailyQuiz.questions.length === 0) {
-    return res.status(404).json({
-      success: false,
-      error: 'No quiz available for today',
-      quizLive: false,
-    });
+    return res.json([]);
   }
 
   // Format questions for response
   const formattedQuestions = dailyQuiz.questions.map((q) => ({
     id: q._id,
+    date: queryDate,
     question: q.question,
     image: q.image,
     options: q.options,
-    // Only include correctAnswer after quiz window closes
-    ...(quizStatus.isQuizWindow === false && { correctAnswer: q.correctAnswer }),
+    correctAnswer: q.correctAnswer,
   }));
 
-  res.json({
-    success: true,
-    date: today,
-    questions: formattedQuestions,
-    totalQuestions: dailyQuiz.questions.length,
-    quizLive: quizStatus.isQuizWindow,
-    timeRemaining: quizStatus.timeRemaining,
-    message: quizStatus.message,
-  });
+  res.json(formattedQuestions);
 });
 
 /**

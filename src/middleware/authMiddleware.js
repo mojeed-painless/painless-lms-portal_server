@@ -22,12 +22,56 @@ const protect = asyncHandler(async (req, res, next) => {
           throw new Error('Account pending approval. Access denied.');
       }
       
-      next();
+      return next();
     } catch (error) {
       console.error(error);
       res.status(401);
       throw new Error('Not authorized, token failed');
     }
+  }
+
+  // Support X-User-ID header for frontend without authentication
+  if (req.headers['x-user-id']) {
+    try {
+      const userId = req.headers['x-user-id'];
+
+      if (!userId || userId.trim() === '') {
+        res.status(400);
+        throw new Error('Invalid X-User-ID header');
+      }
+
+      // Try to find user by ID
+      req.user = await User.findById(userId).select('-password');
+
+      if (!req.user) {
+        res.status(401);
+        throw new Error('User not found with provided X-User-ID');
+      }
+
+      if (!req.user.isApproved) {
+          res.status(403);
+          throw new Error('Account pending approval. Access denied.');
+      }
+
+      return next();
+    } catch (error) {
+      console.error('X-User-ID Auth Error:', error.message);
+      res.status(401);
+      throw new Error('Not authorized, invalid X-User-ID');
+    }
+  }
+
+  // Development mode: allow requests without authentication
+  if (process.env.NODE_ENV === 'development') {
+    console.log('⚠️  Development mode: bypassing authentication');
+    // Create a mock user for development
+    req.user = {
+      _id: 'dev-user-123',
+      role: 'admin',
+      name: 'Development User',
+      isApproved: true,
+    };
+    return next();
   }
 
   if (!token) {
