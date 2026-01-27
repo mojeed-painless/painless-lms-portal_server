@@ -138,9 +138,16 @@ export const getTodayQuestions = asyncHandler(async (req, res) => {
  * @access  Private
  */
 export const checkAttempt = asyncHandler(async (req, res) => {
-  const { date } = req.query;
+  const { date, userId: queryUserId } = req.query;
   const queryDate = date || getTodayDate();
-  const userId = req.user._id;
+  
+  // Get userId from authenticated user or query parameter (fallback for frontend)
+  const userId = req.user?._id || queryUserId;
+
+  if (!userId) {
+    res.status(400);
+    throw new Error('User ID not found. Please ensure you are authenticated or pass userId in query params.');
+  }
 
   console.log(`🔍 [CHECK ATTEMPT] Checking quiz attempt for user ${userId} on date ${queryDate}`);
 
@@ -218,30 +225,27 @@ export const getQuizWindowStatusController = asyncHandler(async (req, res) => {
     (hours === endHour && minutes < endMinute) ||
     (hours === releaseHour && minutes === releaseMinute && seconds < 60);
 
-  let timeToStart = 0;
-  let timeRemaining = 0;
+  let beforeQuizSeconds = 0; // Seconds until quiz starts
+  let duringQuizSeconds = 0; // Seconds remaining in quiz window
   let windowStartTime = '';
   let windowEndTime = '';
 
-  // Calculate time to start
-  if (!isQuizWindow) {
-    const startTotalSeconds = releaseHour * 3600 + releaseMinute * 60;
-    const nowTotalSeconds = hours * 3600 + minutes * 60 + seconds;
-    timeToStart = startTotalSeconds - nowTotalSeconds;
+  // Parse current time in seconds
+  const nowTotalSeconds = hours * 3600 + minutes * 60 + seconds;
+  const startTotalSeconds = releaseHour * 3600 + releaseMinute * 60;
+  const endTotalSeconds = endHour * 3600 + endMinute * 60;
 
-    // If time is negative, quiz starts tomorrow
-    if (timeToStart < 0) {
-      timeToStart += 86400; // 24 hours in seconds
-    }
-  } else {
-    // Calculate remaining time
-    const endTotalSeconds = endHour * 3600 + endMinute * 60;
-    const nowTotalSeconds = hours * 3600 + minutes * 60 + seconds;
-    timeRemaining = endTotalSeconds - nowTotalSeconds;
+  // Calculate time to start (for before__quiz countdown)
+  beforeQuizSeconds = startTotalSeconds - nowTotalSeconds;
+  if (beforeQuizSeconds < 0) {
+    beforeQuizSeconds += 86400; // 24 hours in seconds
+  }
 
-    // If negative, window is about to close or has closed
-    if (timeRemaining < 0) {
-      timeRemaining = 0;
+  // Calculate remaining time (for during__quiz countdown)
+  if (isQuizWindow) {
+    duringQuizSeconds = endTotalSeconds - nowTotalSeconds;
+    if (duringQuizSeconds < 0) {
+      duringQuizSeconds = 0;
     }
   }
 
@@ -254,8 +258,8 @@ export const getQuizWindowStatusController = asyncHandler(async (req, res) => {
     windowStart: windowStartTime,
     windowEnd: windowEndTime,
     duration: settings.duration,
-    timeToStart,
-    timeRemaining,
+    beforeQuizSeconds,
+    duringQuizSeconds,
   });
 
   res.json({
@@ -263,11 +267,18 @@ export const getQuizWindowStatusController = asyncHandler(async (req, res) => {
     windowStart: windowStartTime,
     windowEnd: windowEndTime,
     duration: settings.duration,
-    timeToStart, // Seconds until quiz starts (0 if quiz is active)
-    timeRemaining, // Seconds remaining in quiz window (0 if quiz is not active)
-    message: isQuizWindow
-      ? `Quiz is live! ${timeRemaining} seconds remaining`
-      : `Quiz starts in ${timeToStart} seconds`,
+    // Before Quiz Countdown - 24hr countdown (visible before quiz starts)
+    before__quiz: {
+      isVisible: !isQuizWindow, // Show ONLY when quiz is NOT active
+      secondsUntilStart: beforeQuizSeconds,
+      message: `Quiz starts in ${beforeQuizSeconds} seconds`,
+    },
+    // During Quiz Countdown - quiz duration countdown (visible during quiz)
+    during__quiz: {
+      isVisible: isQuizWindow, // Show ONLY when quiz IS active
+      secondsRemaining: duringQuizSeconds,
+      message: `Quiz ends in ${duringQuizSeconds} seconds`,
+    },
   });
 });
 
@@ -285,11 +296,39 @@ export const submitQuiz = asyncHandler(async (req, res) => {
     throw new Error('Missing required fields: studentId, studentName, date, responses, timeTaken, submittedAt');
   }
 
-  // Check if quiz window is still open
+  // Fetch current settings for time window validation
+  let settings = await QuizSettings.findOne();
+  if (!settings) {
+    settings = new QuizSettings({
+      releaseTime: '15:32',
+      duration: 2,
+    });
+    await settings.save();
+  }
+
+  // Validate submission is within quiz window
   const submissionDate = new Date(submittedAt);
-  if (!isSubmissionWithinWindow(submissionDate)) {
+  const hours = submissionDate.getHours();
+  const minutes = submissionDate.getMinutes();
+  const seconds = submissionDate.getSeconds();
+
+  const [releaseHour, releaseMinute] = settings.releaseTime.split(':').map(Number);
+  const endMinute = (releaseMinute + settings.duration) % 60;
+  const endHour = releaseMinute + settings.duration >= 60 ? (releaseHour + 1) % 24 : releaseHour;
+
+  // Calculate total seconds for precise time comparison
+  const submissionTotalSeconds = hours * 3600 + minutes * 60 + seconds;
+  const windowStartSeconds = releaseHour * 3600 + releaseMinute * 60;
+  const windowEndSeconds = windowStartSeconds + (settings.duration * 60);
+
+  // Check if submission time is within the quiz window
+  const isWithinWindow = submissionTotalSeconds >= windowStartSeconds && submissionTotalSeconds < windowEndSeconds;
+
+  if (!isWithinWindow) {
+    const windowEndFormatted = `${String(endHour).padStart(2, '0')}:${String(endMinute).padStart(2, '0')}`;
+    console.log(`❌ [SUBMIT QUIZ] Submission outside window. Submission: ${hours}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}, Window: ${settings.releaseTime} - ${windowEndFormatted}`);
     res.status(400);
-    throw new Error('Quiz window has closed (ends at 9:32 PM)');
+    throw new Error(`Quiz window has closed. Available: ${settings.releaseTime} - ${windowEndFormatted}`);
   }
 
   // Validate timeTaken
@@ -359,6 +398,8 @@ export const submitQuiz = asyncHandler(async (req, res) => {
 
   await submission.save();
 
+  console.log(`✅ [SUBMIT QUIZ] Quiz submitted successfully for user ${studentId}`);
+
   res.status(201).json({
     success: true,
     message: 'Quiz submitted successfully',
@@ -382,31 +423,46 @@ export const getDailyLeaderboard = asyncHandler(async (req, res) => {
   const { date } = req.query;
   const queryDate = date || getTodayDate();
 
+  // Fetch current settings to check if quiz window is still open
+  let settings = await QuizSettings.findOne();
+  if (!settings) {
+    settings = new QuizSettings({
+      releaseTime: '15:32',
+      duration: 2,
+    });
+    await settings.save();
+  }
+
+  const now = new Date();
+  const hours = now.getHours();
+  const minutes = now.getMinutes();
+  const seconds = now.getSeconds();
+
+  const [releaseHour, releaseMinute] = settings.releaseTime.split(':').map(Number);
+  const endMinute = (releaseMinute + settings.duration) % 60;
+  const endHour = releaseMinute + settings.duration >= 60 ? (releaseHour + 1) % 24 : releaseHour;
+
+  // Calculate total seconds for precise time comparison
+  const nowTotalSeconds = hours * 3600 + minutes * 60 + seconds;
+  const windowStartSeconds = releaseHour * 3600 + releaseMinute * 60;
+  const windowEndSeconds = windowStartSeconds + (settings.duration * 60);
+
+  // Check if current time is within the quiz window
+  const isQuizWindow = nowTotalSeconds >= windowStartSeconds && nowTotalSeconds < windowEndSeconds;
+
   const submissions = await QuizSubmission.find({ date: queryDate });
-  const quizStatus = getQuizWindowStatus();
 
   // If quiz is still running, return empty leaderboard
-  if (quizStatus.isQuizWindow) {
-    return res.json({
-      success: true,
-      date: queryDate,
-      quizLive: true,
-      leaderboard: [],
-      message: 'Leaderboard will be available after quiz ends at 9:32 PM',
-      totalParticipants: submissions.length,
-    });
+  if (isQuizWindow) {
+    const windowEndFormatted = `${String(endHour).padStart(2, '0')}:${String(endMinute).padStart(2, '0')}`;
+    console.log(`⏳ [GET LEADERBOARD] Quiz is still running for ${queryDate} (until ${windowEndFormatted}) - returning empty leaderboard. Current time: ${hours}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`);
+    return res.json([]);
   }
 
   // If quiz window is closed, calculate rankings if not already done
   if (submissions.length === 0) {
-    return res.json({
-      success: true,
-      date: queryDate,
-      quizLive: false,
-      leaderboard: [],
-      message: 'No participants for this quiz',
-      totalParticipants: 0,
-    });
+    console.log(`📭 [GET LEADERBOARD] No submissions found for ${queryDate}`);
+    return res.json([]);
   }
 
   // Update submissions with rankings and bonuses
@@ -431,27 +487,16 @@ export const getDailyLeaderboard = asyncHandler(async (req, res) => {
 
   // Get top 3 for leaderboard
   const top3 = rankedSubmissions.slice(0, 3).map((sub) => ({
-    rank: sub.rank,
     studentId: sub.studentId,
     studentName: sub.studentName,
     correctAnswers: sub.correctAnswers,
     totalQuestions: sub.totalQuestions,
-    percentage: sub.percentage,
     timeTaken: sub.timeTaken,
-    submittedAt: sub.submittedAt,
-    bonusPoints: sub.bonusPoints,
     totalPoints: sub.totalPoints,
-    badge: sub.badge,
   }));
 
-  res.json({
-    success: true,
-    date: queryDate,
-    quizLive: false,
-    leaderboard: top3,
-    totalParticipants: submissions.length,
-    calculatedAt: new Date(),
-  });
+  console.log(`✅ [GET LEADERBOARD] Returning top 3 for date ${queryDate}`);
+  res.json(top3);
 });
 
 /**

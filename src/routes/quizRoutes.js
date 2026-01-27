@@ -17,13 +17,11 @@ import { protect, admin } from '../middleware/authMiddleware.js';
 const router = express.Router();
 
 // Public routes (no authentication required)
-// (You can add public routes here if needed)
+// Check if user has already attempted today's quiz (accepts userId as query param)
+router.get('/daily/check-attempt', checkAttempt);
 
 // Protected routes (authentication required)
 router.use(protect);
-
-// Check if user has already attempted today's quiz
-router.get('/daily/check-attempt', checkAttempt);
 
 // Get dynamic quiz window status based on settings
 router.get('/daily/window-status', getQuizWindowStatusController);
