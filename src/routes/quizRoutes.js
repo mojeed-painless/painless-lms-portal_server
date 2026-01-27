@@ -3,6 +3,7 @@ import {
   addDailyQuestion,
   getTodayQuestions,
   checkAttempt,
+  getQuizWindowStatusController,
   submitQuiz,
   getDailyLeaderboard,
   getQuizHistory,
@@ -23,6 +24,9 @@ router.use(protect);
 
 // Check if user has already attempted today's quiz
 router.get('/daily/check-attempt', checkAttempt);
+
+// Get dynamic quiz window status based on settings
+router.get('/daily/window-status', getQuizWindowStatusController);
 
 // Get today's quiz questions
 router.get('/daily/questions', getTodayQuestions);

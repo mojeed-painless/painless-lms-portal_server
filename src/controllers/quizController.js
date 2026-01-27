@@ -182,6 +182,96 @@ export const checkAttempt = asyncHandler(async (req, res) => {
 });
 
 /**
+ * @desc    Get current quiz window status based on settings
+ * @route   GET /api/quizzes/daily/window-status
+ * @access  Private
+ */
+export const getQuizWindowStatusController = asyncHandler(async (req, res) => {
+  console.log('🔍 [WINDOW STATUS] Fetching dynamic quiz window status');
+
+  // Fetch current settings
+  let settings = await QuizSettings.findOne();
+
+  // If no settings exist, create defaults
+  if (!settings) {
+    console.log('📝 [WINDOW STATUS] No settings found, creating defaults');
+    settings = new QuizSettings({
+      releaseTime: '15:32',
+      duration: 2,
+    });
+    await settings.save();
+  }
+
+  const now = new Date();
+  const hours = now.getHours();
+  const minutes = now.getMinutes();
+  const seconds = now.getSeconds();
+
+  // Parse release time (HH:MM format)
+  const [releaseHour, releaseMinute] = settings.releaseTime.split(':').map(Number);
+  const endMinute = (releaseMinute + settings.duration) % 60;
+  const endHour = releaseMinute + settings.duration >= 60 ? (releaseHour + 1) % 24 : releaseHour;
+
+  // Check if current time is within the quiz window
+  const isQuizWindow =
+    (hours === releaseHour && minutes >= releaseMinute) ||
+    (hours === endHour && minutes < endMinute) ||
+    (hours === releaseHour && minutes === releaseMinute && seconds < 60);
+
+  let timeToStart = 0;
+  let timeRemaining = 0;
+  let windowStartTime = '';
+  let windowEndTime = '';
+
+  // Calculate time to start
+  if (!isQuizWindow) {
+    const startTotalSeconds = releaseHour * 3600 + releaseMinute * 60;
+    const nowTotalSeconds = hours * 3600 + minutes * 60 + seconds;
+    timeToStart = startTotalSeconds - nowTotalSeconds;
+
+    // If time is negative, quiz starts tomorrow
+    if (timeToStart < 0) {
+      timeToStart += 86400; // 24 hours in seconds
+    }
+  } else {
+    // Calculate remaining time
+    const endTotalSeconds = endHour * 3600 + endMinute * 60;
+    const nowTotalSeconds = hours * 3600 + minutes * 60 + seconds;
+    timeRemaining = endTotalSeconds - nowTotalSeconds;
+
+    // If negative, window is about to close or has closed
+    if (timeRemaining < 0) {
+      timeRemaining = 0;
+    }
+  }
+
+  // Format times for display (HH:MM format)
+  windowStartTime = `${String(releaseHour).padStart(2, '0')}:${String(releaseMinute).padStart(2, '0')}`;
+  windowEndTime = `${String(endHour).padStart(2, '0')}:${String(endMinute).padStart(2, '0')}`;
+
+  console.log('✅ [WINDOW STATUS] Calculated:', {
+    isQuizWindow,
+    windowStart: windowStartTime,
+    windowEnd: windowEndTime,
+    duration: settings.duration,
+    timeToStart,
+    timeRemaining,
+  });
+
+  res.json({
+    isQuizWindow,
+    windowStart: windowStartTime,
+    windowEnd: windowEndTime,
+    duration: settings.duration,
+    timeToStart, // Seconds until quiz starts (0 if quiz is active)
+    timeRemaining, // Seconds remaining in quiz window (0 if quiz is not active)
+    message: isQuizWindow
+      ? `Quiz is live! ${timeRemaining} seconds remaining`
+      : `Quiz starts in ${timeToStart} seconds`,
+  });
+});
+
+/**
  * @desc    Submit quiz answers
  * @route   POST /api/quizzes/daily/submit
  * @access  Private
