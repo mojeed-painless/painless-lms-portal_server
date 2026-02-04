@@ -61,19 +61,6 @@ const protect = asyncHandler(async (req, res, next) => {
     }
   }
 
-  // Development mode: allow requests without authentication
-  if (process.env.NODE_ENV === 'development') {
-    console.log('⚠️  Development mode: bypassing authentication');
-    // Create a mock user for development
-    req.user = {
-      _id: 'dev-user-123',
-      role: 'admin',
-      name: 'Development User',
-      isApproved: true,
-    };
-    return next();
-  }
-
   if (!token) {
     res.status(401);
     throw new Error('Not authorized, no token');
